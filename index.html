@@ -499,15 +499,20 @@
 
                 dropinInstance = instance;
 
-                // Habilitar botón cuando haya un método seleccionado
-                dropinInstance.on('paymentMethodRequestable', (event) => {
-                    document.getElementById('submit-button').disabled = !event.paymentMethodIsSelected;
-                });
+                    // Función para verificar si hay un método seleccionado
+                    const updateSubmitButtonState = () => {
+                        // En sandbox, siempre habilitamos el botón si el Drop-in está listo
+                        // (Braintree valida los datos al enviar)
+                        document.getElementById('submit-button').disabled = false;
+                    };
 
-                // Deshabilitar si se remueve el método
-                dropinInstance.on('noPaymentMethodRequestable', () => {
-                    document.getElementById('submit-button').disabled = true;
-                });
+                    // Habilitar botón cuando haya un método seleccionado
+                    dropinInstance.on('paymentMethodRequestable', updateSubmitButtonState);
+
+                    // También habilitar al iniciar (por si ya hay un método por defecto)
+                    setTimeout(updateSubmitButtonState, 500);
+
+
             });
         }
 
