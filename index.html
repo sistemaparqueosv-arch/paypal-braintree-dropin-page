@@ -485,7 +485,7 @@
                 authorization: clientToken,
                 container: '#dropin-container',
                 paypal: {
-                    flow: 'vault' // Usa 'checkout' si prefieres pagos únicos
+                    flow: 'checkout' // Usa 'checkout' si prefieres pagos únicos
                 },
                 card: true
             }, (err, instance) => {
