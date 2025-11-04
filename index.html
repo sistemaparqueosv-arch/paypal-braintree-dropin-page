@@ -19,18 +19,9 @@
             min-height: 100vh;
             padding: 20px;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-
-        .container {
-            max-width: 500px;
-            width: 100%;
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            padding: 30px;
         }
 
         .form-section-title {
@@ -38,10 +29,13 @@
             font-weight: 600;
             color: #333;
             margin-bottom: 16px;
+            align-self: flex-start;
         }
 
         /* Estilo para el contenedor de Drop-in */
         #dropin-container {
+            width: 100%;
+            max-width: 500px;
             margin-top: 20px;
             padding: 16px;
             background: #f9f9f9;
@@ -49,9 +43,9 @@
             border: 1px solid #e0e0e0;
         }
 
-        /* Botón de pago estilizado como la imagen (turquesa, redondeado, check) */
+        /* Botón de pago: "Pagar ahora" */
         .submit-button {
-            background: #2A9D8F; /* Color turquesa como en la imagen */
+            background: #2A9D8F; /* Turquesa */
             color: #fff;
             border: none;
             border-radius: 24px;
@@ -64,6 +58,7 @@
             justify-content: center;
             gap: 8px;
             width: 100%;
+            max-width: 500px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
             margin-top: 24px;
@@ -85,24 +80,89 @@
         .braintree-dropin__footer {
             display: none !important;
         }
+
+        /* Estilo para el modal de confirmación */
+        #confirmModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            max-width: 320px;
+            margin: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modal-btn-yes {
+            background: #2A9D8F;
+            color: white;
+        }
+
+        .modal-btn-no {
+            background: #eee;
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Título opcional -->
-        <div class="form-section-title">Método de Pago</div>
+    <!-- Título -->
+    <div class="form-section-title">Método de Pago</div>
 
-        <!-- ✅ Contenedor del Drop-in de Braintree -->
-        <div id="dropin-container"></div>
+    <!-- ✅ Contenedor del Drop-in de Braintree -->
+    <div id="dropin-container"></div>
 
-        <!-- ✅ Botón de pago con estilo de la imagen -->
-        <button id="submit-button" class="submit-button" disabled>
-            ✓ Seleccionado
-        </button>
+    <!-- ✅ Botón de pago con texto relacionado -->
+    <button id="submit-button" class="submit-button" disabled>
+        💳 Pagar ahora
+    </button>
+
+    <!-- ✅ Modal de confirmación -->
+    <div id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-title">¿Confirmar pago?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="confirmYes">Sí</button>
+                <button class="modal-btn modal-btn-no" id="confirmNo">No</button>
+            </div>
+        </div>
     </div>
 
     <script>
         let dropinInstance = null;
+        let paymentPayload = null; // Para guardar el payload antes de confirmar
 
         // Obtener clientToken de la URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -117,11 +177,11 @@
             braintree.dropin.create({
                 authorization: clientToken,
                 container: '#dropin-container',
-                card: true,           // ✅ Solo tarjeta
-                paypal: false,        // ❌ Desactivado
-                applePay: false,      // ❌ Desactivado
-                googlePay: false,     // ❌ Desactivado
-                venmo: false          // ❌ Desactivado
+                card: true,
+                paypal: false,
+                applePay: false,
+                googlePay: false,
+                venmo: false
             }, (err, instance) => {
                 if (err) {
                     console.error('Error al inicializar Drop-in:', err);
@@ -133,18 +193,13 @@
 
                 dropinInstance = instance;
 
-                // Función para habilitar el botón cuando haya un método seleccionado
                 const updateSubmitButtonState = () => {
                     document.getElementById('submit-button').disabled = false;
                 };
 
-                // Habilitar botón cuando haya un método disponible
                 dropinInstance.on('paymentMethodRequestable', updateSubmitButtonState);
-
-                // También habilitar al iniciar (por si ya hay un método por defecto)
                 setTimeout(updateSubmitButtonState, 500);
 
-                // ✅ Opcional: forzar ocultar el footer si aún aparece (en sandbox)
                 setTimeout(() => {
                     const footer = document.querySelector('.braintree-dropin__footer');
                     if (footer) footer.style.display = 'none';
@@ -152,7 +207,7 @@
             });
         }
 
-        // Manejar el pago con Braintree
+        // Abrir modal de confirmación al hacer clic en "Pagar ahora"
         document.getElementById('submit-button').addEventListener('click', () => {
             if (!dropinInstance) return;
 
@@ -164,12 +219,28 @@
                     return;
                 }
 
-                // ✅ ¡Tenemos el nonce! Enviamos a tu app Expo
-                window.ReactNativeWebView?.postMessage?.(JSON.stringify({
-                    nonce: payload.nonce,
-                    type: payload.type
-                }));
+                // Guardar el payload temporalmente
+                paymentPayload = payload;
+                // Mostrar modal de confirmación
+                document.getElementById('confirmModal').style.display = 'flex';
             });
+        });
+
+        // Confirmar: Sí → enviar nonce
+        document.getElementById('confirmYes').addEventListener('click', () => {
+            if (paymentPayload) {
+                window.ReactNativeWebView?.postMessage?.(JSON.stringify({
+                    nonce: paymentPayload.nonce,
+                    type: paymentPayload.type
+                }));
+            }
+            document.getElementById('confirmModal').style.display = 'none';
+        });
+
+        // Cancelar: No → cerrar modal
+        document.getElementById('confirmNo').addEventListener('click', () => {
+            document.getElementById('confirmModal').style.display = 'none';
+            paymentPayload = null;
         });
     </script>
 </body>
