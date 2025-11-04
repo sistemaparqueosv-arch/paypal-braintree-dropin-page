@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pago con Tarjeta</title>
-    <!-- ✅ SDK de Braintree 1.45.1 -->
+    <!-- SDK de Braintree Drop-in -->
     <script src="https://js.braintreegateway.com/web/dropin/1.45.1/js/dropin.js"></script>
     <style>
         * {
@@ -15,7 +15,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #fff; /* Fondo blanco */
+            background: #fff;
             min-height: 100vh;
             padding: 20px;
             display: flex;
@@ -32,7 +32,6 @@
             align-self: flex-start;
         }
 
-        /* Estilo para el contenedor de Drop-in */
         #dropin-container {
             width: 100%;
             max-width: 500px;
@@ -43,9 +42,8 @@
             border: 1px solid #e0e0e0;
         }
 
-        /* Botón de pago: "Pagar ahora" */
         .submit-button {
-            background: #2A9D8F; /* Turquesa */
+            background: #2A9D8F;
             color: #fff;
             border: none;
             border-radius: 24px;
@@ -75,13 +73,13 @@
             box-shadow: none;
         }
 
-        /* ✅ Ocultar "Choose another way to pay" */
+        /* Ocultar alternativas de pago */
         .braintree-dropin__payment-methods-list,
         .braintree-dropin__footer {
             display: none !important;
         }
 
-        /* Estilo para el modal de confirmación */
+        /* Modal de confirmación */
         #confirmModal {
             display: none;
             position: fixed;
@@ -138,18 +136,11 @@
     </style>
 </head>
 <body>
-    <!-- Título -->
     <div class="form-section-title">Método de Pago</div>
-
-    <!-- ✅ Contenedor del Drop-in de Braintree -->
     <div id="dropin-container"></div>
+    <button id="submit-button" class="submit-button" disabled>💳 Pagar ahora</button>
 
-    <!-- ✅ Botón de pago con texto relacionado -->
-    <button id="submit-button" class="submit-button" disabled>
-        💳 Pagar ahora
-    </button>
-
-    <!-- ✅ Modal de confirmación -->
+    <!-- Modal de confirmación -->
     <div id="confirmModal">
         <div class="modal-content">
             <div class="modal-title">¿Confirmar pago?</div>
@@ -162,9 +153,8 @@
 
     <script>
         let dropinInstance = null;
-        let paymentPayload = null; // Para guardar el payload antes de confirmar
+        let paymentPayload = null;
 
-        // Obtener clientToken de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const clientToken = urlParams.get('token');
 
@@ -173,7 +163,6 @@
                 error: "Falta token de cliente. Contacta al soporte." 
             }));
         } else {
-            // Inicializar Braintree Drop-in SOLO con tarjeta
             braintree.dropin.create({
                 authorization: clientToken,
                 container: '#dropin-container',
@@ -184,22 +173,29 @@
                 venmo: false
             }, (err, instance) => {
                 if (err) {
-                    console.error('Error al inicializar Drop-in:', err);
                     window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
-                        error: "Error al cargar el formulario de pago. Intente de nuevo." 
+                        error: "Hubo un problema. Inténtalo más tarde." 
                     }));
                     return;
                 }
 
                 dropinInstance = instance;
 
-                const updateSubmitButtonState = () => {
+                // Habilitar botón solo cuando el método sea válido y usable
+                const enableSubmitButton = () => {
                     document.getElementById('submit-button').disabled = false;
                 };
 
-                dropinInstance.on('paymentMethodRequestable', updateSubmitButtonState);
-                setTimeout(updateSubmitButtonState, 500);
+                const disableSubmitButton = () => {
+                    document.getElementById('submit-button').disabled = true;
+                };
 
+                // Escuchar cuando haya un método válido
+                dropinInstance.on('paymentMethodRequestable', enableSubmitButton);
+                // Escuchar cuando ya no sea válido (ej. usuario edita y pone datos inválidos)
+                dropinInstance.on('noPaymentMethodRequestable', disableSubmitButton);
+
+                // Forzar ocultar footer de métodos alternativos (en sandbox)
                 setTimeout(() => {
                     const footer = document.querySelector('.braintree-dropin__footer');
                     if (footer) footer.style.display = 'none';
@@ -207,26 +203,22 @@
             });
         }
 
-        // Abrir modal de confirmación al hacer clic en "Pagar ahora"
         document.getElementById('submit-button').addEventListener('click', () => {
             if (!dropinInstance) return;
 
             dropinInstance.requestPaymentMethod((err, payload) => {
                 if (err) {
                     window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
-                        error: "No se pudo obtener el método de pago. Verifique los datos." 
+                        error: "Hubo un problema. Inténtalo más tarde." 
                     }));
                     return;
                 }
 
-                // Guardar el payload temporalmente
                 paymentPayload = payload;
-                // Mostrar modal de confirmación
                 document.getElementById('confirmModal').style.display = 'flex';
             });
         });
 
-        // Confirmar: Sí → enviar nonce
         document.getElementById('confirmYes').addEventListener('click', () => {
             if (paymentPayload) {
                 window.ReactNativeWebView?.postMessage?.(JSON.stringify({
@@ -237,7 +229,6 @@
             document.getElementById('confirmModal').style.display = 'none';
         });
 
-        // Cancelar: No → cerrar modal
         document.getElementById('confirmNo').addEventListener('click', () => {
             document.getElementById('confirmModal').style.display = 'none';
             paymentPayload = null;
