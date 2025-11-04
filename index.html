@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suscripción Premium - Pago</title>
-    <!-- ✅ SDK de Braintree 1.45.1 (sin espacios al final) -->
+    <!-- ✅ SDK de Braintree 1.45.1 (CORREGIDO: sin espacios al final) -->
     <script src="https://js.braintreegateway.com/web/dropin/1.45.1/js/dropin.js"></script>
     <style>
         /* ... (tu CSS exacto, sin cambios) ... */
@@ -485,7 +485,7 @@
                 authorization: clientToken,
                 container: '#dropin-container',
                 paypal: {
-                    flow: 'checkout' // Usa 'checkout' si prefieres pagos únicos
+                    flow: 'checkout' // Ideal para suscripciones
                 },
                 card: true
             }, (err, instance) => {
@@ -526,7 +526,7 @@
         }
 
         // ✅ Manejar el pago con Braintree
-        document.getElementById('submit-button')?.addEventListener('click', () => {
+        document.getElementById('submit-button').addEventListener('click', () => {
             if (!dropinInstance) return;
 
             dropinInstance.requestPaymentMethod((err, payload) => {
