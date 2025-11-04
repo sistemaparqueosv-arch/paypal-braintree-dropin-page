@@ -24,14 +24,6 @@
             align-items: center;
         }
 
-        .form-section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 16px;
-            align-self: flex-start;
-        }
-
         #dropin-container {
             width: 100%;
             max-width: 500px;
@@ -170,7 +162,7 @@
                 applePay: false,
                 googlePay: false,
                 venmo: false,
-                locale: 'es_ES' // español
+                locale: 'es_ES'
             }, (err, instance) => {
                 if (err) {
                     window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
@@ -181,21 +173,21 @@
 
                 dropinInstance = instance;
 
-                // Habilitar botón solo cuando el método sea válido y usable
                 const enableSubmitButton = () => {
                     document.getElementById('submit-button').disabled = false;
+                    // ✅ Ocultar teclado móvil al tener datos válidos
+                    if (document.activeElement) {
+                        document.activeElement.blur();
+                    }
                 };
 
                 const disableSubmitButton = () => {
                     document.getElementById('submit-button').disabled = true;
                 };
 
-                // Escuchar cuando haya un método válido
                 dropinInstance.on('paymentMethodRequestable', enableSubmitButton);
-                // Escuchar cuando ya no sea válido
                 dropinInstance.on('noPaymentMethodRequestable', disableSubmitButton);
 
-                // Forzar ocultar footer de métodos alternativos (en sandbox)
                 setTimeout(() => {
                     const footer = document.querySelector('.braintree-dropin__footer');
                     if (footer) footer.style.display = 'none';
