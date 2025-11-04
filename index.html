@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pago Seguro - Braintree</title>
+  <script src="https://js.braintreegateway.com/web/dropin/1.45.1/js/dropin.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+      background: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    #dropin-container {
+      margin: 20px 0;
+    }
+    .button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background-color: #008000; /* green */
+    }
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h2>Método de Pago</h2>
+  <div id="dropin-container"></div>
+  <button id="submit-button" class="button">Pagar</button>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientToken = urlParams.get('token');
+
+    if (!clientToken) {
+      // Enviar error a React Native (si se usa en WebView)
+      window.ReactNativeWebView?.postMessage?.(JSON.stringify({ error: "Falta token de cliente" }));
+    } else {
+      braintree.dropin.create({
+        authorization: clientToken,
+        container: '#dropin-container',
+        // Habilita PayPal (requerido si quieres usarlo)
+        paypal: {
+          flow: 'vault' // o 'checkout' para pagos únicos
+        },
+        // Opcional: asegura que las tarjetas estén habilitadas
+        card: true
+      }, (err, dropinInstance) => {
+        const submitButton = document.getElementById('submit-button');
+
+        if (err) {
+          console.error('Error al inicializar Drop-in:', err);
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ error: err.message || 'Error al cargar el formulario de pago' }));
+          return;
+        }
+
+        // Botón interactivo solo cuando haya un método de pago válido
+        dropinInstance.on('paymentMethodRequestable', (event) => {
+          submitButton.disabled = !event.paymentMethodIsSelected;
+        });
+
+        submitButton.onclick = () => {
+          dropinInstance.requestPaymentMethod((err, payload) => {
+            if (err) {
+              console.error('Error al solicitar método de pago:', err);
+              window.ReactNativeWebView?.postMessage?.(JSON.stringify({ error: err.message || 'No se pudo obtener el método de pago' }));
+            } else {
+              window.ReactNativeWebView?.postMessage?.(JSON.stringify({
+                nonce: payload.nonce,
+                type: payload.type,
+                details: payload.details
+              }));
+            }
+          });
+        };
+      });
+    }
+  </script>
+</body>
+</html>
