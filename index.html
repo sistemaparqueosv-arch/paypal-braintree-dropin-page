@@ -1,92 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parqueo SV – Gestión Inteligente de Estacionamientos</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
-      margin: 0;
-      padding: 0;
-      background-color: #f9fafb;
-      color: #1f2937;
-    }
-    header {
-      background-color: #111827;
-      color: white;
-      padding: 2rem 1rem;
-      text-align: center;
-    }
-    main {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    h1, h2 {
-      margin-bottom: 1rem;
-    }
-    .plan {
-      background: white;
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      margin: 1.5rem 0;
-    }
-    .price {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #0d9488;
-      margin: 1rem 0;
-    }
-    ul {
-      padding-left: 1.25rem;
-    }
-    footer {
-      text-align: center;
-      padding: 1.5rem;
-      color: #6b7280;
-      font-size: 0.9rem;
-    }
-    a {
-      color: #0d9488;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago con Tarjeta</title>
+    <!-- SDK de Braintree Drop-in -->
+    <script src="https://js.braintreegateway.com/web/dropin/1.45.1/js/dropin.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #dropin-container {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .submit-button {
+            background: #2A9D8F;
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            height: 56px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 500px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
+            margin-top: 24px;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(42, 157, 143, 0.4);
+        }
+
+        .submit-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Ocultar alternativas de pago */
+        .braintree-dropin__payment-methods-list,
+        .braintree-dropin__footer {
+            display: none !important;
+        }
+
+        /* Modal de confirmación */
+        #confirmModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            max-width: 320px;
+            margin: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modal-btn-yes {
+            background: #2A9D8F;
+            color: white;
+        }
+
+        .modal-btn-no {
+            background: #eee;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Parqueo SV</h1>
-    <p>Gestión inteligente de estacionamientos para dueños de parqueos en El Salvador y Latinoamérica</p>
-  </header>
+    <div id="dropin-container"></div>
+    <button id="submit-button" class="submit-button" disabled>💳 Pagar ahora</button>
 
-  <main>
-    <section>
-      <h2>Plan Premium</h2>
-      <div class="plan">
-        <div class="price">$14.99 USD / mes</div>
-        <ul>
-          <li>Gestiona hasta 2 parqueos</li>
-          <li>Registro ilimitado de vehículos</li>
-          <li>Acceso completo al historial de ingresos</li>
-          <li>Parqueos adicionales con pago extra</li>
-        </ul>
-      </div>
-      <p>Una solución sencilla, segura y eficiente para administrar tus ingresos por estacionamiento en tiempo real.</p>
-    </section>
+    <!-- Modal de confirmación -->
+    <div id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-title">¿Confirmar pago?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="confirmYes">Sí</button>
+                <button class="modal-btn modal-btn-no" id="confirmNo">No</button>
+            </div>
+        </div>
+    </div>
 
-    <section>
-      <h2>¿Tienes preguntas?</h2>
-      <p>Contáctanos por correo: <a href="mailto:sistema.parqueo.sv@gmail.com">sistema.parqueo.sv@gmail.com</a></p>
-    </section>
-  </main>
+    <script>
+        let dropinInstance = null;
+        let paymentPayload = null;
 
-  <footer>
-    <p>© 2025 Parqueo SV. Todos los derechos reservados.</p>
-  </footer>
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientToken = urlParams.get('token');
+
+        if (!clientToken) {
+            window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
+                error: "Falta token de cliente. Contacta al soporte." 
+            }));
+        } else {
+            braintree.dropin.create({
+                authorization: clientToken,
+                container: '#dropin-container',
+                card: true,
+                paypal: false,
+                applePay: false,
+                googlePay: false,
+                venmo: false,
+                locale: 'es_ES'
+            }, (err, instance) => {
+                if (err) {
+                    window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
+                        error: "Hubo un problema. Inténtalo más tarde." 
+                    }));
+                    return;
+                }
+
+                dropinInstance = instance;
+
+                const enableSubmitButton = () => {
+                    document.getElementById('submit-button').disabled = false;
+                    // ✅ Ocultar teclado móvil al tener datos válidos
+                    if (document.activeElement) {
+                        document.activeElement.blur();
+                    }
+                };
+
+                const disableSubmitButton = () => {
+                    document.getElementById('submit-button').disabled = true;
+                };
+
+                dropinInstance.on('paymentMethodRequestable', enableSubmitButton);
+                dropinInstance.on('noPaymentMethodRequestable', disableSubmitButton);
+
+                setTimeout(() => {
+                    const footer = document.querySelector('.braintree-dropin__footer');
+                    if (footer) footer.style.display = 'none';
+                }, 1000);
+            });
+        }
+
+        document.getElementById('submit-button').addEventListener('click', () => {
+            if (!dropinInstance) return;
+
+            dropinInstance.requestPaymentMethod((err, payload) => {
+                if (err) {
+                    window.ReactNativeWebView?.postMessage?.(JSON.stringify({ 
+                        error: "Hubo un problema. Inténtalo más tarde." 
+                    }));
+                    return;
+                }
+
+                paymentPayload = payload;
+                document.getElementById('confirmModal').style.display = 'flex';
+            });
+        });
+
+        document.getElementById('confirmYes').addEventListener('click', () => {
+            if (paymentPayload) {
+                window.ReactNativeWebView?.postMessage?.(JSON.stringify({
+                    nonce: paymentPayload.nonce,
+                    type: paymentPayload.type
+                }));
+            }
+            document.getElementById('confirmModal').style.display = 'none';
+        });
+
+        document.getElementById('confirmNo').addEventListener('click', () => {
+            document.getElementById('confirmModal').style.display = 'none';
+            paymentPayload = null;
+        });
+    </script>
 </body>
 </html>
